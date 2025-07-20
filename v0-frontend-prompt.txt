@@ -1,0 +1,244 @@
+TokenTrust MVP Frontend Development Prompt for v0
+================================================
+
+Project Overview
+----------------
+Create a modern, responsive web application for TokenTrust - an AI-powered Solana token fraud detection platform. The app should provide real-time token analysis with comprehensive risk assessment and beautiful data visualization.
+
+Core Features to Implement
+--------------------------
+
+1. Main Token Analysis Interface
+- Token Input: Large, prominent input field for Solana token addresses with validation
+- Real-time Analysis: Live progress indicators and status updates via WebSocket
+- Risk Score Display: Large, color-coded risk score (0-100) with visual indicators
+- Risk Level Badge: Prominent LOW/MEDIUM/HIGH/CRITICAL badges with appropriate colors
+- Analysis Summary: Key findings in expandable cards
+
+2. Comprehensive Analysis Dashboard
+Create a multi-tab or accordion interface showing:
+
+Tab 1: Overview
+- Token metadata (name, symbol, image, supply)
+- Risk score and level with visual gauge
+- Quick safety/risk factors list
+- Actionable recommendations
+
+Tab 2: On-Chain Analysis ✅ (Phase 1 Complete)
+- Mint authority status (✅ Revoked / ❌ Active)
+- Freeze authority status
+- Transaction volume and patterns
+- Token age and activity metrics
+- Creator behavior analysis
+
+Tab 3: DEX & Liquidity 🚧 (Phase 2 In Progress)
+- Liquidity depth visualization
+- Volume charts (24h, 7d)
+- Price impact analysis
+- Rug pull risk indicators
+- DEX distribution pie chart
+
+Tab 4: Holder Distribution 🚧 (Phase 2 In Progress)
+- Top holders table with percentages
+- Concentration charts (top 10/50/100)
+- Distribution risk assessment
+- Whale movement tracking
+
+Tab 5: Social & Web 📋 (Phase 3 Planned)
+- Twitter metrics and sentiment
+- Telegram group health
+- Website quality score
+- Whitepaper analysis
+
+3. Real-time Features
+- WebSocket Integration: Live analysis progress updates
+- Live Risk Updates: Real-time risk score changes
+- Notification System: Analysis completion alerts
+- Progress Indicators: Step-by-step analysis progress
+
+4. Data Visualization
+- Risk Score Gauge: Circular or linear progress indicator
+- Transaction Charts: Volume, price, activity over time
+- Holder Distribution: Pie charts and bar graphs
+- Liquidity Depth: Order book visualization
+- Timeline Charts: Token activity timeline
+
+Design Requirements
+-------------------
+
+Color Scheme
+- Primary: Modern blue (#3B82F6) or purple (#8B5CF6)
+- Success/Green: Low risk (#10B981)
+- Warning/Yellow: Medium risk (#F59E0B)
+- Danger/Red: High/Critical risk (#EF4444)
+- Neutral: Gray scale (#6B7280)
+- Background: Light mode with dark mode support
+
+UI/UX Guidelines
+- Modern & Clean: Minimalist design with ample white space
+- Mobile-First: Responsive design for all devices
+- Accessibility: WCAG 2.1 AA compliance
+- Loading States: Skeleton screens and progress indicators
+- Error Handling: User-friendly error messages
+- Animations: Subtle micro-interactions and transitions
+
+Technical Stack Recommendations
+------------------------------
+- Framework: React/Next.js or Vue.js
+- Styling: Tailwind CSS or styled-components
+- Charts: Chart.js, D3.js, or Recharts
+- State Management: Zustand, Redux Toolkit, or Pinia
+- WebSocket: Socket.IO client
+- HTTP Client: Axios or fetch API
+- Icons: Lucide React, Heroicons, or Phosphor Icons
+
+Key API Endpoints to Integrate
+------------------------------
+
+Core Analysis ✅ (Implemented)
+POST /api/analyze
+{
+  "tokenAddress": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+  "includeDex": false,
+  "includeSocial": false,
+  "includeWeb": false,
+  "includeAI": false
+}
+
+Token Data ✅ (Implemented)
+GET /api/token/{address}/metadata
+GET /api/token/{address}/transactions?limit=10
+GET /api/token/{address}/mint-info
+
+DEX Analysis 🚧 (In Progress)
+GET /api/dex/{address}/liquidity
+GET /api/dex/{address}/volume
+GET /api/dex/{address}/rug-pull-risk
+
+Holder Analysis 🚧 (In Progress)
+GET /api/holders/{address}/distribution
+GET /api/holders/wallet/{walletAddress}
+
+System Endpoints ✅ (Implemented)
+GET /health
+GET /api/test/helius
+GET /api/config
+
+WebSocket Events
+----------------
+// Subscribe to analysis updates
+socket.emit('subscribe:analysis', { tokenAddress: '...' })
+
+// Listen for events
+socket.on('analysis:start', (data) => { /* Show progress */ })
+socket.on('analysis:complete', (data) => { /* Update results */ })
+
+Response Data Structure
+-----------------------
+The main analysis endpoint returns:
+{
+  "success": true,
+  "data": {
+    "tokenAddress": "string",
+    "riskScore": 75, // 0-100
+    "riskLevel": "HIGH", // LOW/MEDIUM/HIGH/CRITICAL
+    "tokenInfo": { /* metadata */ },
+    "mintInfo": { /* authority info */ },
+    "transactionData": { /* analysis */ },
+    "creatorData": { /* creator analysis */ },
+    "riskFactors": ["factor1", "factor2"],
+    "safetyFactors": ["safety1", "safety2"],
+    "recommendations": ["rec1", "rec2"]
+  },
+  "processingTime": 2340,
+  "timestamp": "2024-01-15T10:30:00.000Z"
+}
+
+Required Pages/Components
+-------------------------
+
+1. Landing Page
+- Hero section with token input
+- Feature highlights
+- How it works section
+- Trust indicators
+
+2. Analysis Dashboard
+- Main analysis interface
+- Results display
+- Export/share functionality
+- History of analyzed tokens
+
+3. Token History
+- List of previously analyzed tokens
+- Quick re-analysis
+- Comparison features
+
+4. About/Help
+- How TokenTrust works
+- Risk factor explanations
+- FAQ section
+- Contact information
+
+Advanced Features to Consider
+-----------------------------
+- Token Comparison: Side-by-side analysis
+- Watchlist: Save tokens for monitoring
+- Alerts: Notifications for risk changes
+- Export: PDF/CSV reports
+- Sharing: Social media integration
+- Dark Mode: Toggle between light/dark themes
+- Mobile App: PWA capabilities
+
+Performance Requirements
+------------------------
+- Loading Time: <3 seconds for initial analysis
+- Real-time Updates: <1 second for WebSocket events
+- Mobile Performance: Optimized for mobile devices
+- Caching: Smart caching for repeated analyses
+- Error Recovery: Graceful handling of API failures
+
+Security Considerations
+-----------------------
+- Input Validation: Sanitize token addresses
+- Rate Limiting: Handle API rate limits gracefully
+- Error Messages: Don't expose sensitive information
+- HTTPS: Secure connections only
+
+Testing Requirements
+--------------------
+- Unit Tests: Component and utility testing
+- Integration Tests: API integration testing
+- E2E Tests: Full user journey testing
+- Mobile Testing: Cross-device compatibility
+- Accessibility Testing: Screen reader compatibility
+
+Deployment Considerations
+-------------------------
+- Environment: Development, staging, production
+- API Base URL: Configurable for different environments
+- Error Tracking: Sentry or similar error monitoring
+- Analytics: User behavior tracking
+- SEO: Meta tags and structured data
+
+Implementation Priority
+-----------------------
+1. Core Analysis Interface (Phase 1 features)
+2. Real-time WebSocket integration
+3. Data visualization and charts
+4. Responsive design and mobile optimization
+5. Advanced features (Phase 2/3 placeholders)
+6. Testing and optimization
+
+Additional Notes for v0
+-----------------------
+- Focus on the core analysis interface first (Phase 1 features)
+- Use placeholder data for Phase 2/3 features until APIs are ready
+- Implement responsive design from the start
+- Include loading states and error handling
+- Make the risk score the central visual element
+- Use modern design patterns and animations
+- Ensure the interface is intuitive for both crypto experts and newcomers
+- Prioritize real-time updates and comprehensive data visualization
+
+This frontend should provide an intuitive, professional interface that makes complex token analysis accessible to both crypto experts and newcomers, with real-time updates and comprehensive data visualization. 

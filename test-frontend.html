@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TokenTrust - Token Analysis Dashboard</title>
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ccc;
+        }
+
+        .status-dot.connected {
+            background: #4CAF50;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.disconnected {
+            background: #f44336;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .results {
+            grid-column: 1 / -1;
+        }
+
+        .analysis-result {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .token-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .info-item {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .info-item h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .info-item p {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .risk-assessment {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .risk-assessment.low {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+        }
+
+        .risk-assessment.medium {
+            background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+        }
+
+        .risk-assessment.high {
+            background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+        }
+
+        .risk-score {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .risk-factors, .safety-factors {
+            margin-bottom: 20px;
+        }
+
+        .factor-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .factor-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .factor-list li:last-child {
+            border-bottom: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #f44336;
+            margin-bottom: 20px;
+        }
+
+        .success {
+            background: #e8f5e8;
+            color: #2e7d32;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #4caf50;
+            margin-bottom: 20px;
+        }
+
+        .socket-events {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .event-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+
+        .event-item:last-child {
+            border-bottom: none;
+        }
+
+        .timestamp {
+            color: #6c757d;
+            font-size: 0.8rem;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .token-info {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔒 TokenTrust</h1>
+            <p>Multi-Source Intelligence for DeFi Security</p>
+        </div>
+
+        <div class="main-content">
+            <div class="card">
+                <h2>🔍 Token Analysis</h2>
+                
+                <div class="status-indicator">
+                    <div class="status-dot" id="socketStatus"></div>
+                    <span id="socketStatusText">Connecting...</span>
+                </div>
+
+                <div class="input-group">
+                    <label for="tokenAddress">Token Address (Solana)</label>
+                    <input type="text" id="tokenAddress" placeholder="Enter Solana token address..." 
+                           value="EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v">
+                </div>
+
+                <button class="btn" id="analyzeBtn" onclick="analyzeToken()">
+                    🔍 Analyze Token
+                </button>
+
+                <div class="input-group" style="margin-top: 20px;">
+                    <label for="testAddress">Quick Test Addresses</label>
+                    <select id="testAddress" onchange="selectTestAddress()">
+                        <option value="">Select a test token...</option>
+                        <option value="EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v">USDC (USD Coin)</option>
+                        <option value="DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263">Bonk</option>
+                        <option value="So11111111111111111111111111111111111111112">SOL (Wrapped SOL)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>📊 System Status</h2>
+                
+                <div class="status-indicator">
+                    <div class="status-dot" id="apiStatus"></div>
+                    <span id="apiStatusText">Checking...</span>
+                </div>
+
+                <button class="btn" onclick="testConnection()" style="margin-bottom: 20px;">
+                    🔌 Test API Connection
+                </button>
+
+                <button class="btn" onclick="testHelius()" style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);">
+                    🌐 Test Helius Connection
+                </button>
+
+                <div id="systemInfo" style="margin-top: 20px; font-size: 0.9rem; color: #666;">
+                    <div>Environment: <span id="env">-</span></div>
+                    <div>Version: <span id="version">-</span></div>
+                    <div>Socket Connections: <span id="socketCount">-</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="results" id="results" style="display: none;">
+            <div class="analysis-result">
+                <h2>📊 Analysis Results</h2>
+                <div id="analysisContent"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>🔌 Real-time Events</h2>
+            <div class="socket-events" id="socketEvents">
+                <div class="event-item">
+                    <span class="timestamp">Waiting for events...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let socket;
+        let isAnalyzing = false;
+
+        // Initialize Socket.IO connection
+        function initializeSocket() {
+            socket = io('http://localhost:3002', {
+                transports: ['websocket', 'polling'],
+                timeout: 20000
+            });
+
+            socket.on('connect', () => {
+                updateSocketStatus(true);
+                addEvent('Connected to server', 'success');
+            });
+
+            socket.on('disconnect', () => {
+                updateSocketStatus(false);
+                addEvent('Disconnected from server', 'error');
+            });
+
+            socket.on('analysis:start', (data) => {
+                addEvent(`Analysis started for ${data.tokenAddress}`, 'info');
+            });
+
+            socket.on('analysis:complete', (data) => {
+                addEvent(`Analysis completed - Risk: ${data.riskLevel} (${data.riskScore}/100)`, 'success');
+            });
+
+            socket.on('error', (data) => {
+                addEvent(`Error: ${data.message}`, 'error');
+            });
+        }
+
+        function updateSocketStatus(connected) {
+            const statusDot = document.getElementById('socketStatus');
+            const statusText = document.getElementById('socketStatusText');
+            
+            if (connected) {
+                statusDot.className = 'status-dot connected';
+                statusText.textContent = 'Connected';
+            } else {
+                statusDot.className = 'status-dot disconnected';
+                statusText.textContent = 'Disconnected';
+            }
+        }
+
+        function addEvent(message, type = 'info') {
+            const eventsContainer = document.getElementById('socketEvents');
+            const eventItem = document.createElement('div');
+            eventItem.className = 'event-item';
+            
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? '#f44336' : type === 'success' ? '#4caf50' : '#2196f3';
+            
+            eventItem.innerHTML = `
+                <span class="timestamp">[${timestamp}]</span>
+                <span style="color: ${color};">${message}</span>
+            `;
+            
+            eventsContainer.appendChild(eventItem);
+            eventsContainer.scrollTop = eventsContainer.scrollHeight;
+        }
+
+        async function analyzeToken() {
+            if (isAnalyzing) return;
+            
+            const tokenAddress = document.getElementById('tokenAddress').value.trim();
+            if (!tokenAddress) {
+                alert('Please enter a token address');
+                return;
+            }
+
+            isAnalyzing = true;
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            analyzeBtn.disabled = true;
+            analyzeBtn.textContent = '🔍 Analyzing...';
+
+            try {
+                const response = await fetch('http://localhost:3002/api/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ tokenAddress })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    displayResults(result.data);
+                    addEvent(`Analysis completed in ${result.processingTime}ms`, 'success');
+                } else {
+                    throw new Error(result.error || 'Analysis failed');
+                }
+            } catch (error) {
+                console.error('Analysis error:', error);
+                addEvent(`Analysis failed: ${error.message}`, 'error');
+                alert(`Analysis failed: ${error.message}`);
+            } finally {
+                isAnalyzing = false;
+                analyzeBtn.disabled = false;
+                analyzeBtn.textContent = '🔍 Analyze Token';
+            }
+        }
+
+        function displayResults(analysis) {
+            const resultsDiv = document.getElementById('results');
+            const contentDiv = document.getElementById('analysisContent');
+            
+            const riskClass = analysis.riskLevel.toLowerCase();
+            
+            contentDiv.innerHTML = `
+                <div class="token-info">
+                    <div class="info-item">
+                        <h4>Token Name</h4>
+                        <p>${analysis.tokenName || 'Unknown'}</p>
+                    </div>
+                    <div class="info-item">
+                        <h4>Token Symbol</h4>
+                        <p>${analysis.tokenSymbol || 'Unknown'}</p>
+                    </div>
+                    <div class="info-item">
+                        <h4>Address</h4>
+                        <p style="font-size: 0.9rem; word-break: break-all;">${analysis.tokenAddress}</p>
+                    </div>
+                    <div class="info-item">
+                        <h4>Price</h4>
+                        <p>${analysis.price ? `$${analysis.price}` : 'N/A'}</p>
+                    </div>
+                </div>
+
+                <div class="risk-assessment ${riskClass}">
+                    <div class="risk-score">Risk Score: ${analysis.riskScore}/100</div>
+                    <div>Risk Level: ${analysis.riskLevel}</div>
+                </div>
+
+                <div class="risk-factors">
+                    <h3>🚨 Risk Factors</h3>
+                    <ul class="factor-list">
+                        ${analysis.riskFactors.map(factor => `<li>• ${factor}</li>`).join('')}
+                    </ul>
+                </div>
+
+                <div class="safety-factors">
+                    <h3>✅ Safety Factors</h3>
+                    <ul class="factor-list">
+                        ${analysis.safetyFactors.map(factor => `<li>• ${factor}</li>`).join('')}
+                    </ul>
+                </div>
+
+                <div class="recommendations">
+                    <h3>💡 Recommendations</h3>
+                    <ul class="factor-list">
+                        ${analysis.recommendations.map(rec => `<li>• ${rec}</li>`).join('')}
+                    </ul>
+                </div>
+            `;
+            
+            resultsDiv.style.display = 'block';
+        }
+
+        async function testConnection() {
+            try {
+                const response = await fetch('http://localhost:3002/health');
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateApiStatus(true);
+                    updateSystemInfo(result);
+                    addEvent('API connection successful', 'success');
+                } else {
+                    throw new Error('API health check failed');
+                }
+            } catch (error) {
+                updateApiStatus(false);
+                addEvent(`API connection failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testHelius() {
+            try {
+                const response = await fetch('http://localhost:3002/api/test/helius');
+                const result = await response.json();
+                
+                if (result.success && result.data.connected) {
+                    addEvent('Helius connection successful', 'success');
+                } else {
+                    throw new Error('Helius connection failed');
+                }
+            } catch (error) {
+                addEvent(`Helius connection failed: ${error.message}`, 'error');
+            }
+        }
+
+        function updateApiStatus(connected) {
+            const statusDot = document.getElementById('apiStatus');
+            const statusText = document.getElementById('apiStatusText');
+            
+            if (connected) {
+                statusDot.className = 'status-dot connected';
+                statusText.textContent = 'API Connected';
+            } else {
+                statusDot.className = 'status-dot disconnected';
+                statusText.textContent = 'API Disconnected';
+            }
+        }
+
+        function updateSystemInfo(data) {
+            document.getElementById('env').textContent = data.environment || 'Unknown';
+            document.getElementById('version').textContent = data.version || 'Unknown';
+            document.getElementById('socketCount').textContent = data.socketConnections || 0;
+        }
+
+        function selectTestAddress() {
+            const select = document.getElementById('testAddress');
+            const input = document.getElementById('tokenAddress');
+            if (select.value) {
+                input.value = select.value;
+            }
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeSocket();
+            testConnection();
+        });
+    </script>
+</body>
+</html> 

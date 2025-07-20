@@ -1,0 +1,1535 @@
+openapi: 3.0.3
+info:
+  title: TokenTrust API
+  description: |
+    AI-powered multi-source intelligence platform for Solana token fraud detection.
+    
+    ## Current Implementation Status
+    
+    ### ✅ Phase 1 Complete (Foundation & Basic Analysis)
+    - Core token analysis engine
+    - Helius API integration for on-chain data
+    - Basic risk scoring algorithm
+    - Whitelisting system for known tokens
+    - Mint authority and freeze authority detection
+    - Transaction volume analysis
+    - Token age calculation
+    - Basic metadata quality assessment
+    
+    ### 🚧 Phase 2 In Progress (Multi-Source Intelligence)
+    - DEX integration (DexScreener, Birdeye, Jupiter)
+    - Holder distribution analysis
+    - Liquidity risk assessment
+    - Volume pattern analysis
+    - Rug pull detection
+    
+    ### 📋 Phase 3 Planned (AI Intelligence & Real-Time Monitoring)
+    - Advanced LLM analysis (GPT-4, Claude)
+    - Real-time monitoring system
+    - Predictive modeling
+    - Alert and notification system
+    - Social media intelligence
+    - Web presence analysis
+    
+  version: 1.0.0
+  contact:
+    name: TokenTrust Team
+    email: support@tokentrust.ai
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3000
+    description: Development server
+  - url: https://api.tokentrust.ai
+    description: Production server
+
+tags:
+  - name: Analysis
+    description: Token analysis and risk assessment endpoints
+  - name: Token Data
+    description: Token metadata and transaction data
+  - name: DEX
+    description: Decentralized exchange data and liquidity analysis
+  - name: Holders
+    description: Token holder distribution and wallet analysis
+  - name: System
+    description: System health and configuration endpoints
+  - name: Real-time
+    description: WebSocket endpoints for real-time updates
+
+paths:
+  # ========================================
+  # CORE ANALYSIS ENDPOINTS
+  # ========================================
+  
+  /api/analyze:
+    post:
+      tags:
+        - Analysis
+      summary: Analyze a Solana token for fraud risk
+      description: |
+        Performs comprehensive token analysis including:
+        - On-chain data analysis (mint authority, freeze authority, transactions)
+        - Risk scoring based on multiple factors
+        - Whitelist verification
+        - Transaction pattern analysis
+        - Creator behavior assessment
+        
+        **Current Implementation**: ✅ Complete
+        - Basic risk scoring with 6 factors
+        - Transaction analysis
+        - Creator behavior patterns
+        - Whitelist system integration
+        
+        **Processing Time**: ~2-5 seconds
+        **Accuracy**: 100% for whitelisted tokens, 70%+ for unknown tokens
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - tokenAddress
+              properties:
+                tokenAddress:
+                  type: string
+                  description: Solana token address (mint address)
+                  example: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+                includeDex:
+                  type: boolean
+                  description: Include DEX and liquidity analysis (Phase 2)
+                  default: false
+                includeSocial:
+                  type: boolean
+                  description: Include social media analysis (Phase 3)
+                  default: false
+                includeWeb:
+                  type: boolean
+                  description: Include web presence analysis (Phase 3)
+                  default: false
+                includeAI:
+                  type: boolean
+                  description: Include AI-powered analysis (Phase 3)
+                  default: false
+      responses:
+        '200':
+          description: Analysis completed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/TokenAnalysis'
+                  processingTime:
+                    type: number
+                    description: Analysis time in milliseconds
+                    example: 2340
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: "2024-01-15T10:30:00.000Z"
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateLimitError'
+        '500':
+          description: Analysis failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ========================================
+  # TOKEN DATA ENDPOINTS
+  # ========================================
+  
+  /api/token/{address}/metadata:
+    get:
+      tags:
+        - Token Data
+      summary: Get token metadata
+      description: |
+        Retrieves comprehensive token metadata using Helius DAS (Digital Asset Standard).
+        
+        **Current Implementation**: ✅ Complete
+        - Token name, symbol, decimals
+        - Supply information
+        - Price data (if available)
+        - Image and description
+        - Interface type
+      parameters:
+        - name: address
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Solana token address
+          example: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+      responses:
+        '200':
+          description: Token metadata retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/TokenMetadata'
+                  timestamp:
+                    type: string
+                    format: date-time
+        '404':
+          description: Token not found
+        '500':
+          description: Failed to fetch metadata
+
+  /api/token/{address}/transactions:
+    get:
+      tags:
+        - Token Data
+      summary: Get token transaction history
+      description: |
+        Retrieves recent transactions for a token with detailed analysis.
+        
+        **Current Implementation**: ✅ Complete
+        - Transaction signatures and timestamps
+        - Transfer patterns
+        - Account activity analysis
+        - Suspicious activity detection
+      parameters:
+        - name: address
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Solana token address
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+            maximum: 100
+          description: Number of transactions to retrieve
+      responses:
+        '200':
+          description: Transaction data retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/TransactionAnalysis'
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /api/token/{address}/mint-info:
+    get:
+      tags:
+        - Token Data
+      summary: Get token mint authority information
+      description: |
+        Retrieves critical mint and freeze authority information.
+        
+        **Current Implementation**: ✅ Complete
+        - Mint authority status (revoked/active)
+        - Freeze authority status
+        - Supply information
+        - Decimals
+      parameters:
+        - name: address
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Solana token address
+      responses:
+        '200':
+          description: Mint information retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/MintInfo'
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  # ========================================
+  # DEX ANALYSIS ENDPOINTS (Phase 2)
+  # ========================================
+  
+  /api/dex/{address}/liquidity:
+    get:
+      tags:
+        - DEX
+      summary: Get DEX liquidity analysis
+      description: |
+        Analyzes token liquidity across multiple DEXes.
+        
+        **Implementation Status**: 🚧 In Progress
+        - DexScreener integration ✅
+        - Birdeye integration 🚧
+        - Jupiter integration 🚧
+        - Rug pull risk assessment
+        - Liquidity depth analysis
+      parameters:
+        - name: address
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Solana token address
+      responses:
+        '200':
+          description: Liquidity analysis completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/LiquidityAnalysis'
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /api/dex/{address}/volume:
+    get:
+      tags:
+        - DEX
+      summary: Get volume analysis
+      description: |
+        Analyzes trading volume patterns and trends.
+        
+        **Implementation Status**: 🚧 In Progress
+        - 24h and 7d volume data
+        - Volume change analysis
+        - Pattern detection (pump/dump/manipulation)
+        - Average trade size calculation
+      parameters:
+        - name: address
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Solana token address
+      responses:
+        '200':
+          description: Volume analysis completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/VolumeAnalysis'
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /api/dex/{address}/rug-pull-risk:
+    get:
+      tags:
+        - DEX
+      summary: Assess rug pull risk
+      description: |
+        Evaluates the likelihood of a rug pull based on liquidity patterns.
+        
+        **Implementation Status**: 🚧 In Progress
+        - Liquidity removal detection
+        - Sudden volume spikes
+        - Price manipulation patterns
+        - Historical rug pull pattern matching
+      parameters:
+        - name: address
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Solana token address
+      responses:
+        '200':
+          description: Rug pull risk assessment completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/RugPullRisk'
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  # ========================================
+  # HOLDER ANALYSIS ENDPOINTS (Phase 2)
+  # ========================================
+  
+  /api/holders/{address}/distribution:
+    get:
+      tags:
+        - Holders
+      summary: Analyze token holder distribution
+      description: |
+        Analyzes token holder concentration and distribution patterns.
+        
+        **Implementation Status**: 🚧 In Progress
+        - Top holder identification
+        - Concentration analysis (top 10/50/100)
+        - Distribution risk assessment
+        - Whale movement tracking
+      parameters:
+        - name: address
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Solana token address
+      responses:
+        '200':
+          description: Holder distribution analysis completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/HolderAnalysis'
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /api/holders/wallet/{walletAddress}:
+    get:
+      tags:
+        - Holders
+      summary: Analyze individual wallet
+      description: |
+        Analyzes a specific wallet's behavior and risk profile.
+        
+        **Implementation Status**: 🚧 In Progress
+        - Token holdings analysis
+        - Activity level assessment
+        - Suspicious activity detection
+        - Risk scoring
+      parameters:
+        - name: walletAddress
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Wallet address to analyze
+      responses:
+        '200':
+          description: Wallet analysis completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/WalletProfile'
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /api/holders/coordinated-activity:
+    post:
+      tags:
+        - Holders
+      summary: Detect coordinated activity between wallets
+      description: |
+        Analyzes multiple wallets for coordinated trading patterns.
+        
+        **Implementation Status**: 📋 Planned
+        - Transaction timing analysis
+        - Similar trading patterns
+        - Common funding sources
+        - Bot detection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - wallets
+              properties:
+                wallets:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of wallet addresses to analyze
+                  example: ["wallet1", "wallet2", "wallet3"]
+      responses:
+        '200':
+          description: Coordinated activity analysis completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      coordinated:
+                        type: boolean
+                      confidence:
+                        type: number
+                        minimum: 0
+                        maximum: 100
+                      patterns:
+                        type: array
+                        items:
+                          type: string
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  # ========================================
+  # SOCIAL MEDIA ENDPOINTS (Phase 3)
+  # ========================================
+  
+  /api/social/{address}/twitter:
+    get:
+      tags:
+        - Social
+      summary: Analyze Twitter presence
+      description: |
+        Analyzes Twitter mentions, sentiment, and engagement.
+        
+        **Implementation Status**: 📋 Planned
+        - Mention tracking
+        - Sentiment analysis
+        - Bot detection
+        - Influencer mentions
+      parameters:
+        - name: address
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Solana token address
+      responses:
+        '200':
+          description: Twitter analysis completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/TwitterMetrics'
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /api/social/{address}/telegram:
+    get:
+      tags:
+        - Social
+      summary: Analyze Telegram group health
+      description: |
+        Analyzes Telegram group activity and member engagement.
+        
+        **Implementation Status**: 📋 Planned
+        - Member count and activity
+        - Message volume analysis
+        - Admin verification
+        - Group quality assessment
+      parameters:
+        - name: address
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Solana token address
+      responses:
+        '200':
+          description: Telegram analysis completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/TelegramHealth'
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  # ========================================
+  # WEB ANALYSIS ENDPOINTS (Phase 3)
+  # ========================================
+  
+  /api/web/website:
+    post:
+      tags:
+        - Web
+      summary: Analyze website quality
+      description: |
+        Analyzes project website for legitimacy indicators.
+        
+        **Implementation Status**: 📋 Planned
+        - Domain age verification
+        - SSL certificate validation
+        - Content quality assessment
+        - Design professionalism
+        - Social link verification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - url
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: Website URL to analyze
+      responses:
+        '200':
+          description: Website analysis completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/WebsiteQuality'
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /api/web/whitepaper:
+    post:
+      tags:
+        - Web
+      summary: Analyze whitepaper quality
+      description: |
+        Analyzes project whitepaper for technical depth and credibility.
+        
+        **Implementation Status**: 📋 Planned
+        - Technical depth assessment
+        - Roadmap clarity
+        - Team information verification
+        - Tokenomics analysis
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - url
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: Whitepaper URL to analyze
+      responses:
+        '200':
+          description: Whitepaper analysis completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/WhitepaperQuality'
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  # ========================================
+  # AI ANALYSIS ENDPOINTS (Phase 3)
+  # ========================================
+  
+  /api/ai/context-analysis:
+    post:
+      tags:
+        - AI
+      summary: AI-powered contextual analysis
+      description: |
+        Uses advanced LLMs to analyze token context and patterns.
+        
+        **Implementation Status**: 📋 Planned
+        - GPT-4 integration
+        - Claude-3 integration
+        - Pattern recognition
+        - Narrative assessment
+        - Scam technique identification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - tokenAddress
+              properties:
+                tokenAddress:
+                  type: string
+                  description: Solana token address
+                includeSocial:
+                  type: boolean
+                  default: false
+                includeWeb:
+                  type: boolean
+                  default: false
+      responses:
+        '200':
+          description: AI analysis completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/AIInsights'
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /api/ai/risk-explanation:
+    post:
+      tags:
+        - AI
+      summary: Generate human-readable risk explanation
+      description: |
+        Uses AI to explain risk factors in plain language.
+        
+        **Implementation Status**: 📋 Planned
+        - Risk factor explanation
+        - Contextual reasoning
+        - Actionable insights
+        - Confidence scoring
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - riskScore
+                - riskFactors
+              properties:
+                riskScore:
+                  type: number
+                  minimum: 0
+                  maximum: 100
+                riskFactors:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Risk explanation generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      explanation:
+                        type: string
+                      confidence:
+                        type: number
+                        minimum: 0
+                        maximum: 100
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  # ========================================
+  # SYSTEM ENDPOINTS
+  # ========================================
+  
+  /health:
+    get:
+      tags:
+        - System
+      summary: Health check
+      description: Check API server health and status
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  status:
+                    type: string
+                    example: "healthy"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  version:
+                    type: string
+                    example: "1.0.0"
+                  environment:
+                    type: string
+                    example: "development"
+
+  /api/test/helius:
+    get:
+      tags:
+        - System
+      summary: Test Helius connection
+      description: Test connectivity to Helius API
+      responses:
+        '200':
+          description: Connection test completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      connected:
+                        type: boolean
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /api/config:
+    get:
+      tags:
+        - System
+      summary: Get API configuration
+      description: Get current API configuration and feature flags
+      responses:
+        '200':
+          description: Configuration retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      features:
+                        type: object
+                        properties:
+                          phase1:
+                            type: boolean
+                            description: Basic analysis features
+                          phase2:
+                            type: boolean
+                            description: DEX and holder analysis
+                          phase3:
+                            type: boolean
+                            description: AI and social analysis
+                      rateLimit:
+                        type: object
+                        properties:
+                          windowMs:
+                            type: number
+                          maxRequests:
+                            type: number
+                      environment:
+                        type: string
+                  timestamp:
+                    type: string
+                    format: date-time
+
+# ========================================
+# WEBSOCKET ENDPOINTS
+# ========================================
+
+# WebSocket events are documented separately as they don't follow OpenAPI spec
+# Socket.IO events:
+# - 'analysis:start' - Emitted when analysis begins
+# - 'analysis:complete' - Emitted when analysis completes
+# - 'subscribe:analysis' - Client subscribes to analysis updates
+
+components:
+  schemas:
+    # ========================================
+    # CORE ANALYSIS SCHEMAS
+    # ========================================
+    
+    TokenAnalysis:
+      type: object
+      properties:
+        tokenAddress:
+          type: string
+          description: Solana token address
+        timestamp:
+          type: string
+          format: date-time
+        tokenInfo:
+          $ref: '#/components/schemas/TokenMetadata'
+        mintInfo:
+          $ref: '#/components/schemas/MintInfo'
+        transactionData:
+          $ref: '#/components/schemas/TransactionAnalysis'
+        creatorData:
+          $ref: '#/components/schemas/CreatorAnalysis'
+        isWhitelisted:
+          type: boolean
+          description: Whether token is in known safe list
+        whitelistInfo:
+          $ref: '#/components/schemas/WhitelistInfo'
+        riskScore:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: Overall risk score (0-100)
+        riskLevel:
+          type: string
+          enum: [LOW, MEDIUM, HIGH, CRITICAL]
+        riskFactors:
+          type: array
+          items:
+            type: string
+          description: List of identified risk factors
+        safetyFactors:
+          type: array
+          items:
+            type: string
+          description: List of positive safety indicators
+        recommendations:
+          type: array
+          items:
+            type: string
+          description: Actionable recommendations
+
+    TokenMetadata:
+      type: object
+      properties:
+        address:
+          type: string
+        name:
+          type: string
+        symbol:
+          type: string
+        decimals:
+          type: number
+        supply:
+          type: string
+        mintAuthority:
+          type: string
+        freezeAuthority:
+          type: string
+        description:
+          type: string
+        image:
+          type: string
+        externalUrl:
+          type: string
+        interface:
+          type: string
+        mutable:
+          type: boolean
+        priceInfo:
+          type: object
+          properties:
+            price_per_token:
+              type: number
+            currency:
+              type: string
+
+    MintInfo:
+      type: object
+      properties:
+        decimals:
+          type: number
+        supply:
+          type: string
+        actualSupply:
+          type: number
+        mintAuthority:
+          type: string
+        freezeAuthority:
+          type: string
+        mintRevoked:
+          type: boolean
+        freezeRevoked:
+          type: boolean
+
+    TransactionAnalysis:
+      type: object
+      properties:
+        totalTransactions:
+          type: number
+        timeSpan:
+          type: object
+          properties:
+            firstTx:
+              type: number
+            lastTx:
+              type: number
+            daysActive:
+              type: number
+        transferPatterns:
+          type: object
+          properties:
+            totalTransfers:
+              type: number
+            uniqueSenders:
+              type: number
+            uniqueReceivers:
+              type: number
+            averageTransferSize:
+              type: number
+        accountActivity:
+          type: object
+          properties:
+            activeAccounts:
+              type: number
+            newAccounts:
+              type: number
+            dormantAccounts:
+              type: number
+        suspiciousActivity:
+          type: object
+          properties:
+            detected:
+              type: boolean
+            patterns:
+              type: array
+              items:
+                type: string
+            riskLevel:
+              type: string
+              enum: [LOW, MEDIUM, HIGH]
+
+    CreatorAnalysis:
+      type: object
+      properties:
+        creatorAddress:
+          type: string
+        creatorActivity:
+          type: object
+          properties:
+            totalTransactions:
+              type: number
+            lastActivity:
+              type: number
+            daysSinceLastActivity:
+              type: number
+        behaviorPatterns:
+          type: object
+          properties:
+            isActive:
+              type: boolean
+            hasMultipleTokens:
+              type: boolean
+            suspiciousPatterns:
+              type: array
+              items:
+                type: string
+        riskAssessment:
+          type: object
+          properties:
+            level:
+              type: string
+              enum: [LOW, MEDIUM, HIGH]
+            factors:
+              type: array
+              items:
+                type: string
+
+    WhitelistInfo:
+      type: object
+      properties:
+        name:
+          type: string
+        symbol:
+          type: string
+        reason:
+          type: string
+        riskOverride:
+          type: string
+          enum: [LOW, MEDIUM, HIGH]
+
+    # ========================================
+    # DEX ANALYSIS SCHEMAS
+    # ========================================
+    
+    LiquidityAnalysis:
+      type: object
+      properties:
+        totalLiquidity:
+          type: number
+          description: Total liquidity in USD
+        liquidityDepth:
+          type: object
+          properties:
+            low:
+              type: number
+            medium:
+              type: number
+            high:
+              type: number
+        volume24h:
+          type: number
+        priceImpact:
+          type: number
+        poolCount:
+          type: number
+        dexDistribution:
+          type: object
+          additionalProperties:
+            type: number
+        rugPullRisk:
+          $ref: '#/components/schemas/RugPullRisk'
+
+    VolumeAnalysis:
+      type: object
+      properties:
+        volume24h:
+          type: number
+        volume7d:
+          type: number
+        volumeChange24h:
+          type: number
+        volumeChange7d:
+          type: number
+        averageTradeSize:
+          type: number
+        volumePatterns:
+          type: array
+          items:
+            type: string
+
+    RugPullRisk:
+      type: object
+      properties:
+        detected:
+          type: boolean
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 100
+        indicators:
+          type: array
+          items:
+            type: string
+        lastLiquidityChange:
+          type: number
+        liquidityRemovalRate:
+          type: number
+
+    LockStatus:
+      type: object
+      properties:
+        isLocked:
+          type: boolean
+        lockPercentage:
+          type: number
+        lockDuration:
+          type: number
+        lockProvider:
+          type: string
+        lockAddress:
+          type: string
+
+    # ========================================
+    # HOLDER ANALYSIS SCHEMAS
+    # ========================================
+    
+    HolderAnalysis:
+      type: object
+      properties:
+        totalHolders:
+          type: number
+        topHolders:
+          type: array
+          items:
+            type: object
+            properties:
+              address:
+                type: string
+              balance:
+                type: number
+              percentage:
+                type: number
+        concentration:
+          type: object
+          properties:
+            top10:
+              type: number
+            top50:
+              type: number
+            top100:
+              type: number
+        distributionRisk:
+          type: string
+          enum: [LOW, MEDIUM, HIGH]
+        riskFactors:
+          type: array
+          items:
+            type: string
+
+    WalletProfile:
+      type: object
+      properties:
+        address:
+          type: string
+        tokenCount:
+          type: number
+        totalValue:
+          type: number
+        activityLevel:
+          type: string
+          enum: [LOW, MEDIUM, HIGH]
+        suspiciousActivity:
+          type: boolean
+        riskScore:
+          type: number
+          minimum: 0
+          maximum: 100
+
+    # ========================================
+    # SOCIAL MEDIA SCHEMAS
+    # ========================================
+    
+    TwitterMetrics:
+      type: object
+      properties:
+        followers:
+          type: number
+        following:
+          type: number
+        tweets:
+          type: number
+        mentions24h:
+          type: number
+        sentiment:
+          type: string
+          enum: [POSITIVE, NEUTRAL, NEGATIVE]
+        engagementRate:
+          type: number
+        botScore:
+          type: number
+
+    TelegramHealth:
+      type: object
+      properties:
+        members:
+          type: number
+        onlineMembers:
+          type: number
+        messageVolume24h:
+          type: number
+        adminCount:
+          type: number
+        isVerified:
+          type: boolean
+        activityLevel:
+          type: string
+          enum: [LOW, MEDIUM, HIGH]
+
+    DiscordActivity:
+      type: object
+      properties:
+        members:
+          type: number
+        onlineMembers:
+          type: number
+        channels:
+          type: number
+        messageVolume24h:
+          type: number
+        developerActivity:
+          type: boolean
+        communityHealth:
+          type: string
+          enum: [POOR, FAIR, GOOD, EXCELLENT]
+
+    RedditSentiment:
+      type: object
+      properties:
+        subscribers:
+          type: number
+        posts24h:
+          type: number
+        comments24h:
+          type: number
+        sentiment:
+          type: string
+          enum: [POSITIVE, NEUTRAL, NEGATIVE]
+        topKeywords:
+          type: array
+          items:
+            type: string
+        communityQuality:
+          type: string
+          enum: [LOW, MEDIUM, HIGH]
+
+    # ========================================
+    # WEB ANALYSIS SCHEMAS
+    # ========================================
+    
+    WebsiteQuality:
+      type: object
+      properties:
+        domainAge:
+          type: number
+        hasSSL:
+          type: boolean
+        contentQuality:
+          type: string
+          enum: [POOR, FAIR, GOOD, EXCELLENT]
+        designQuality:
+          type: string
+          enum: [POOR, FAIR, GOOD, EXCELLENT]
+        socialLinks:
+          type: object
+          properties:
+            twitter:
+              type: string
+            telegram:
+              type: string
+            discord:
+              type: string
+            github:
+              type: string
+        loadTime:
+          type: number
+        mobileFriendly:
+          type: boolean
+
+    WhitepaperQuality:
+      type: object
+      properties:
+        exists:
+          type: boolean
+        quality:
+          type: string
+          enum: [POOR, FAIR, GOOD, EXCELLENT]
+        technicalDepth:
+          type: number
+        roadmapClarity:
+          type: number
+        teamInformation:
+          type: boolean
+        tokenomics:
+          type: boolean
+
+    TeamCredibility:
+      type: object
+      properties:
+        teamSize:
+          type: number
+        verifiedMembers:
+          type: number
+        linkedinProfiles:
+          type: number
+        githubProfiles:
+          type: number
+        experienceLevel:
+          type: string
+          enum: [JUNIOR, MID, SENIOR, EXPERT]
+        credibilityScore:
+          type: number
+
+    DomainHistory:
+      type: object
+      properties:
+        creationDate:
+          type: string
+          format: date
+        lastUpdated:
+          type: string
+          format: date
+        registrar:
+          type: string
+        dnsRecords:
+          type: array
+          items:
+            type: string
+        previousOwners:
+          type: number
+        reputationScore:
+          type: number
+
+    # ========================================
+    # AI ANALYSIS SCHEMAS
+    # ========================================
+    
+    AIInsights:
+      type: object
+      properties:
+        contextualRisk:
+          type: string
+        patternRecognition:
+          type: array
+          items:
+            type: string
+        narrativeAssessment:
+          type: string
+        scamTechniques:
+          type: array
+          items:
+            type: string
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 100
+
+    Prediction:
+      type: object
+      properties:
+        outcome:
+          type: string
+          enum: [POSITIVE, NEUTRAL, NEGATIVE]
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 100
+        timeframe:
+          type: string
+        reasoning:
+          type: string
+
+    Pattern:
+      type: object
+      properties:
+        type:
+          type: string
+        description:
+          type: string
+        confidence:
+          type: number
+        examples:
+          type: array
+          items:
+            type: string
+
+    # ========================================
+    # ERROR SCHEMAS
+    # ========================================
+    
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    RateLimitError:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: "Too many requests"
+        retryAfter:
+          type: number
+          description: Seconds to wait before retrying
+
+# ========================================
+# SECURITY SCHEMAS
+# ========================================
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key for authentication (if required)
+
+security:
+  - ApiKeyAuth: []
+
+# ========================================
+# ADDITIONAL INFORMATION
+# ========================================
+
+# Rate Limiting
+# - 100 requests per 15 minutes per IP
+# - WebSocket connections are not rate limited
+# - Analysis endpoints have higher limits for authenticated users
+
+# WebSocket Events
+# - 'analysis:start' - Emitted when analysis begins
+#   Data: { tokenAddress: string }
+# - 'analysis:complete' - Emitted when analysis completes
+#   Data: { tokenAddress: string, riskScore: number, riskLevel: string }
+# - 'subscribe:analysis' - Client subscribes to analysis updates
+#   Data: { tokenAddress: string }
+
+# Environment Variables Required
+# - HELIUS_API_KEY: Required for blockchain data
+# - OPENAI_API_KEY: Required for AI analysis (Phase 3)
+# - REDIS_URL: Optional for caching
+# - CORS_ORIGIN: Frontend origin for CORS
+# - PORT: Server port (default: 3000)
+# - NODE_ENV: Environment (development/production)
+# - LOG_LEVEL: Logging level (debug/info/warn/error) 
