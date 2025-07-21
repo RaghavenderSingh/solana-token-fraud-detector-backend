@@ -19,6 +19,12 @@ import { ConnectionMonitor } from "./utils/connectionMonitor";
 import verificationRoutes, {
   initializeVerificationRoutes,
 } from "./routes/verification";
+import dexRoutes from "./routes/dex";
+import analysisRoutes, { initializeAnalysisRoutes } from "./routes/analysis";
+import configRoutes from "./routes/config";
+import aiAnalysisRoutes, {
+  initializeAIAnalysisRoutes,
+} from "./routes/aiAnalysis";
 
 // Configure logging
 const logger = winston.createLogger({
@@ -47,6 +53,7 @@ if (process.env.NODE_ENV !== "production") {
 const config: TokenTrustConfig = {
   heliusApiKey: process.env.HELIUS_API_KEY || "",
   openaiApiKey: process.env.OPENAI_API_KEY,
+  geminiApiKey: process.env.GEMINI_API_KEY,
   redisUrl: process.env.REDIS_URL,
   logLevel:
     (process.env.LOG_LEVEL as "debug" | "info" | "warn" | "error") || "info",
@@ -69,6 +76,11 @@ if (!config.heliusApiKey) {
 const analyzer = new TokenTrustAnalyzer(config.heliusApiKey);
 const heliusService = new HeliusService(config.heliusApiKey);
 const verificationRouter = initializeVerificationRoutes(config.heliusApiKey);
+const analysisRouter = initializeAnalysisRoutes(config.heliusApiKey);
+const aiAnalysisRouter = initializeAIAnalysisRoutes(
+  config.heliusApiKey,
+  config.geminiApiKey
+);
 
 // Create Express app
 const app = express();
@@ -140,6 +152,12 @@ app.use(rateLimiterMiddleware);
 
 // API Routes
 app.use("/api/verify", verificationRouter);
+app.use("/api/dex", dexRoutes);
+app.use("/api/analyze", analysisRouter);
+app.use("/api/ai-analyze", aiAnalysisRouter);
+app.use("/api/config", configRoutes);
+app.use("/api/analyze", analysisRouter);
+app.use("/api/config", configRoutes);
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -153,7 +171,8 @@ app.use((req, res, next) => {
 
 // Socket.IO connection spam protection middleware
 app.use((req, res, next) => {
-  // Block suspicious User-Agents
+  // Block suspicious User-Agents (disabled for testing)
+  /*
   const userAgent = req.get("User-Agent") || "";
   const suspiciousPatterns = [
     /bot/i,
@@ -179,6 +198,7 @@ app.use((req, res, next) => {
       timestamp: new Date().toISOString(),
     });
   }
+  */
 
   next();
 });

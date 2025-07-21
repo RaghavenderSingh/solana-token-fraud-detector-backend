@@ -64,6 +64,7 @@ export class VerificationService {
       this.checkOnChainVerification(tokenAddress, metadata),
       this.checkLiquidityPresence(tokenAddress),
       this.checkGovernanceTokens(tokenAddress),
+      this.checkRecentlyLaunchedSignals(tokenAddress, metadata),
     ]);
 
     const result = this.aggregateVerificationResults(
@@ -301,6 +302,154 @@ export class VerificationService {
     }
 
     return { verified: false, weight: 0, source: "Governance Token" };
+  }
+
+  private async checkRecentlyLaunchedSignals(
+    tokenAddress: string,
+    metadata?: TokenMetadata
+  ): Promise<{
+    verified: boolean;
+    weight: number;
+    source: string;
+    details?: any;
+  }> {
+    try {
+      // Get recent transactions to check token age
+      const response = await axios.post(
+        `https://mainnet.helius-rpc.com/?api-key=${this.heliusApiKey}`,
+        {
+          jsonrpc: "2.0",
+          id: 1,
+          method: "getSignaturesForAddress",
+          params: [tokenAddress, { limit: 100 }],
+        },
+        { timeout: 10000 }
+      );
+
+      const transactions = response.data?.result || [];
+
+      if (transactions.length === 0) {
+        return {
+          verified: false,
+          weight: 0,
+          source: "Recently Launched Signals",
+        };
+      }
+
+      // Calculate token age
+      const lastTxTimestamp = transactions[0]?.blockTime || 0;
+      const firstTxTimestamp =
+        transactions[transactions.length - 1]?.blockTime || 0;
+      const daysActive =
+        firstTxTimestamp > 0
+          ? (lastTxTimestamp - firstTxTimestamp) / (24 * 60 * 60)
+          : 0;
+
+      // Check if token is recently launched (less than 30 days)
+      if (daysActive > 30) {
+        return {
+          verified: false,
+          weight: 0,
+          source: "Recently Launched Signals",
+        };
+      }
+
+      // Count positive signals
+      let positiveSignals = 0;
+      let totalSignals = 0;
+
+      // Signal 1: Has basic metadata
+      totalSignals++;
+      if (metadata?.name && metadata.name !== "Unknown") {
+        positiveSignals++;
+      }
+
+      // Signal 2: Has reasonable transaction count
+      totalSignals++;
+      if (transactions.length >= 5) {
+        positiveSignals++;
+      }
+
+      // Signal 3: No obvious scam indicators in name
+      totalSignals++;
+      if (metadata?.name) {
+        const name = metadata.name.toLowerCase();
+        const scamKeywords = [
+          "inu",
+          "moon",
+          "safe",
+          "elon",
+          "doge",
+          "shib",
+          "pepe",
+          "wojak",
+        ];
+        const hasScamIndicators = scamKeywords.some((keyword) =>
+          name.includes(keyword)
+        );
+        if (!hasScamIndicators) {
+          positiveSignals++;
+        }
+      }
+
+      // Signal 4: Has proper decimals
+      totalSignals++;
+      if (metadata?.decimals !== undefined && metadata.decimals <= 18) {
+        positiveSignals++;
+      }
+
+      // Signal 5: Has some activity in recent hours
+      totalSignals++;
+      const recentTransactions = transactions.filter((tx: any) => {
+        const txAge = Date.now() / 1000 - (tx.blockTime || 0);
+        return txAge < 24 * 60 * 60; // Last 24 hours
+      });
+      if (recentTransactions.length >= 2) {
+        positiveSignals++;
+      }
+
+      // Calculate confidence
+      const confidence =
+        totalSignals > 0 ? (positiveSignals / totalSignals) * 100 : 0;
+
+      // Consider it a recently launched legitimate token if:
+      // 1. At least 60% positive signals
+      // 2. At least 3 total signals checked
+      // 3. Token is actually recent
+      const isRecentlyLaunched =
+        confidence >= 60 && totalSignals >= 3 && daysActive <= 30;
+
+      if (isRecentlyLaunched) {
+        return {
+          verified: true,
+          weight: 10, // Lower weight than established platforms
+          source: "Recently Launched Signals",
+          details: {
+            daysActive: Math.round(daysActive * 100) / 100,
+            positiveSignals,
+            totalSignals,
+            confidence: Math.round(confidence),
+            recentActivity: recentTransactions.length,
+          },
+        };
+      }
+
+      return {
+        verified: false,
+        weight: 0,
+        source: "Recently Launched Signals",
+      };
+    } catch (error) {
+      console.log(
+        "⚠️ Recently launched signals check failed:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
+      return {
+        verified: false,
+        weight: 0,
+        source: "Recently Launched Signals",
+      };
+    }
   }
 
   private aggregateVerificationResults(

@@ -117,6 +117,22 @@ export interface TokenAnalysis {
   riskFactors: string[];
   safetyFactors: string[];
   recommendations: string[];
+  dexData?: {
+    liquidity: LiquidityAnalysis;
+    volume: VolumeAnalysis;
+    priceData: {
+      currentPrice: number;
+      priceChange24h: number;
+      priceChange7d: number;
+      high24h: number;
+      low24h: number;
+      marketCap: number;
+      fullyDilutedValue: number;
+    };
+    rugPullRisk: RugPullRisk;
+    lockStatus: LockStatus;
+    pools: any[];
+  };
 }
 
 // DEX Analysis Types
@@ -318,6 +334,7 @@ export interface AnalysisResponse extends APIResponse<TokenAnalysis> {
 export interface TokenTrustConfig {
   heliusApiKey: string;
   openaiApiKey?: string;
+  geminiApiKey?: string;
   redisUrl?: string;
   logLevel: "debug" | "info" | "warn" | "error";
   environment: "development" | "production" | "test";
